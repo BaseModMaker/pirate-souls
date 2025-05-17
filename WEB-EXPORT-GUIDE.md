@@ -6,7 +6,7 @@ This document provides instructions for the Godot web export automation.
 
 The project has been set up with a GitHub Actions workflow that automatically:
 1. Builds your Godot game for web (HTML5)
-2. Deploys it to GitHub Pages
+2. Deploys it directly to GitHub Pages
 
 ## Triggering the Web Export
 
@@ -33,6 +33,20 @@ After the workflow completes successfully:
 The web build will be available at:
 `https://YOUR-USERNAME.github.io/pirate-souls`
 
+## Setting Up GitHub Pages
+
+Before the workflow can deploy to GitHub Pages, you need to:
+
+1. Go to your GitHub repository
+2. Click on "Settings" 
+3. Navigate to "Pages" in the left sidebar
+4. Under "Build and deployment", configure:
+   - Source: "Deploy from a branch"
+   - Branch: "gh-pages" / "(root)"
+5. Click "Save"
+
+Important: The first time you run the workflow, it will create the gh-pages branch automatically.
+
 ## Troubleshooting
 
 If the workflow doesn't run:
@@ -44,3 +58,4 @@ If the workflow runs but fails:
 1. Check the error logs in the Actions tab
 2. Make sure your Godot project has a valid HTML5 export preset
 3. Ensure GitHub Pages is set up to deploy from the `gh-pages` branch
+4. For the "Missing download info" error, verify that your workflow file uses the latest version
