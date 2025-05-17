@@ -1,14 +1,12 @@
 name: "Godot Web Export"
 
 on:
+  # Trigger on push to main branch
   push:
-    tags:
-      - 'v*'        # This will trigger on any tag that starts with 'v', like v1.0.0
-      - 'v*.*.*'    # More specific pattern for semantic versioning
-  # Also trigger on release creation
-  release:
-    types: [created]
-  # Add a manual trigger option
+    branches:
+      - main      # This will trigger whenever you push to the main branch
+      - master    # Added master in case that's your default branch name
+  # Keep the manual trigger option
   workflow_dispatch:
 
 jobs:

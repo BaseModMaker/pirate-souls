@@ -2,7 +2,7 @@
 
 ## Godot Web Export
 
-This workflow automatically exports your Godot game for web and deploys it to GitHub Pages when you push a new version tag (e.g., `v1.0.0`).
+This workflow automatically exports your Godot game for web and deploys it to GitHub Pages when you push to the `main` branch.
 
 ### Setup Instructions
 
