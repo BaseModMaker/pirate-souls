@@ -1,8 +1,12 @@
-name: "Manual Godot Web Export"
-
-# This workflow is similar to the main one but can be triggered manually
+name: "Godot Web Export"
 
 on:
+  # Trigger on push to main branch
+  push:
+    branches:
+      - main      # This will trigger whenever you push to the main branch
+      - master    # Added master in case that's your default branch name
+  # Keep the manual trigger option
   workflow_dispatch:
 
 jobs:
@@ -27,15 +31,10 @@ jobs:
           mkdir -p build/web
           cd game
           godot --export "HTML5" ../build/web/index.html
-          
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: web
-          path: build/web
-          
+            # Skip the artifact upload and deploy directly to GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@4.1.4
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          branch: gh-pages
-          folder: build/web
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          force_orphan: true
