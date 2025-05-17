@@ -4,7 +4,6 @@ name: "Manual Godot Web Export"
 
 on:
   workflow_dispatch:
-    # No inputs required anymore since we're not using version tags
 
 jobs:
   export_web:
@@ -14,10 +13,9 @@ jobs:
       image: barichello/godot-ci:3.5.2
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           lfs: true
-          fetch-depth: 0
       
       - name: Setup
         run: |
@@ -31,13 +29,13 @@ jobs:
           godot --export "HTML5" ../build/web/index.html
           
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: web
           path: build/web
           
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
           branch: gh-pages
           folder: build/web
