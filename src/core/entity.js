@@ -64,14 +64,17 @@ export class Entity extends GameObject {
     applyPhysics() {
         this.speed *= this.friction;
 
-        let effectiveRotation = this.rotation;
-        if (this.controller && 'directionOffset' in this.controller) {
-            effectiveRotation = (this.rotation + this.controller.directionOffset) % 360;
-        }
-
-        const angleRad = effectiveRotation * (Math.PI / 180);
+        // Calculate movement direction based on the entity's rotation
+        // This is where we align with the arrow direction
+        const angleRad = this.rotation * (Math.PI / 180);
+        
+        // Calculate movement based directly on the rotation angle
+        // Negative sin for X and positive cos for Y gives us forward movement
+        // in the direction we're facing (rotation 0 = up, 90 = right, etc.)
         const moveX = -Math.sin(angleRad) * this.speed;
-        const moveY = Math.cos(angleRad) * this.speed;        this.x += moveX;
+        const moveY = Math.cos(angleRad) * this.speed;
+
+        this.x += moveX;
         this.y += moveY;
     }
 

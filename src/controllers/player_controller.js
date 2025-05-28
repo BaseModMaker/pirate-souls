@@ -4,7 +4,7 @@ import { Cannonball } from '../core/cannonball.js';
 export class PlayerController {
   constructor() {
     this.entity = null;
-    this.directionOffset = 180;
+    this.directionOffset = 0;
     this.boostActive = false;
     this.camera = null;
     this.previousBoostActive = false;
@@ -130,7 +130,8 @@ export class PlayerController {
     });
   }
   _spawnBubble() {
-    const direction = this.entity.rotation + this.directionOffset + (Math.random() - 0.5) * this.bubbleSpread;
+    // Update to use rotation directly without the offset
+    const direction = this.entity.rotation + (Math.random() - 0.5) * this.bubbleSpread;
     const speed = this.bubbleSpeed;
     const size = this.minBubbleSize + Math.random() * (this.maxBubbleSize - this.minBubbleSize);
     const bubble = new Bubble(this.entity.x, this.entity.y, speed, direction, size, this.bubbleLifetime);
@@ -139,8 +140,8 @@ export class PlayerController {
   }
 
   teleportPolar(distance) {
-    const direction = this.entity.rotation + this.directionOffset;
-    const radians = direction * (Math.PI / 180);
+    // Update to use rotation directly without the offset
+    const radians = this.entity.rotation * (Math.PI / 180);
     const dx = Math.cos(radians) * distance;
     const dy = Math.sin(radians) * distance;
     this.entity.x += dx;
@@ -152,14 +153,15 @@ export class PlayerController {
     }
   }
   _fireCannon(side) {
-    const rotationRad = (this.entity.rotation + this.directionOffset) * (Math.PI / 180);
+    // Update to use rotation directly without the offset
+    const rotationRad = this.entity.rotation * (Math.PI / 180);
     const perpRad = rotationRad + side * (Math.PI / 2);
     const offsetX = Math.cos(perpRad) * this.cannonOffset;
     const offsetY = Math.sin(perpRad) * this.cannonOffset;
 
     const fireX = this.entity.x + offsetX;
     const fireY = this.entity.y + offsetY;
-    const direction = (this.entity.rotation + this.directionOffset) * (180 / Math.PI);
+    const direction = this.entity.rotation;
 
     const cannonball = new Cannonball(fireX, fireY, 'assets/images/cannonball-3x3x2.png', direction, this.cannonballSpeed);
     this.cannonballs.push(cannonball);

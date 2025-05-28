@@ -626,7 +626,68 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             this.performanceMode,
             270 // Always facing up on screen
         );
-          // Draw UI elements using UI Manager
+        
+        // Draw direction indicator arrow (red)
+        const directionArrow = new Graphics(); 
+        
+        // Get the exact movement angle from the entity's rotation
+        // No need for directionOffset anymore since we've aligned the movement
+        const angleRad = this.player.rotation * (Math.PI / 180);
+        
+        // Calculate the movement vector (normalized)
+        const moveX = -Math.sin(angleRad);
+        const moveY = Math.cos(angleRad);
+        
+        // Arrow parameters
+        const arrowLength = 60;
+        const arrowHeadSize = 12;
+        const lineWidth = 3;
+        
+        // Calculate shaft endpoint
+        const shaftEndX = centerX + moveX * (arrowLength - arrowHeadSize);
+        const shaftEndY = centerY + moveY * (arrowLength - arrowHeadSize);
+        
+        // Draw the line directly with lineStyle
+        directionArrow.lineStyle({
+            width: lineWidth,
+            color: 0xFF0000,
+            cap: 'round',
+            join: 'round'
+        });
+        
+        // Draw the shaft
+        directionArrow.moveTo(centerX, centerY);
+        directionArrow.lineTo(shaftEndX, shaftEndY);
+        
+        // Add to world container
+        worldContainer.addChild(directionArrow);
+        
+        // Draw arrow head
+        const arrowHead = new Graphics();
+        arrowHead.beginFill(0xFF0000);
+        
+        // Calculate the angle from the movement vector
+        const arrowAngle = Math.atan2(moveY, moveX);
+        
+        // Draw the arrowhead directly at the end of the shaft
+        arrowHead.position.set(shaftEndX, shaftEndY);
+        
+        // Draw a triangle pointing in the direction of movement
+        const headBackX = -Math.cos(arrowAngle) * arrowHeadSize;
+        const headBackY = -Math.sin(arrowAngle) * arrowHeadSize;
+        const headRightX = -Math.sin(arrowAngle) * arrowHeadSize/2;
+        const headRightY = Math.cos(arrowAngle) * arrowHeadSize/2;
+        
+        arrowHead.moveTo(0, 0);
+        arrowHead.lineTo(headBackX + headRightX, headBackY + headRightY);
+        arrowHead.lineTo(headBackX - headRightX, headBackY - headRightY);
+        arrowHead.closePath();
+        arrowHead.endFill();
+        
+        // Add arrowhead to world container
+        worldContainer.addChild(arrowHead);
+        
+        // Draw UI elements using UI Manager
         if (this.playerController.stamina !== undefined && this.playerController.maxStamina !== undefined) {
             this.uiManager.updateStaminaBar(
                 this.playerController.stamina, 
