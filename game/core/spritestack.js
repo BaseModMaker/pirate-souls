@@ -6,6 +6,7 @@ export class SpriteStack {
     /**
      * Create a SpriteStack for PixiJS.
      * @param {string|null} imagePath - Path to the sprite sheet or null.
+     * @param {PIXI.Texture|null} texture - Pre-loaded PIXI texture.
      * @param {number} numLayers - Number of layers to stack.
      * @param {number} layerOffset - Vertical pixels between each layer.
      * @param {number} defaultWidth - Default width if no image.
@@ -15,6 +16,7 @@ export class SpriteStack {
      */
     constructor({
         imagePath = null,
+        texture = null,
         numLayers = 8,
         layerOffset = 0.5,
         defaultWidth = 32,
@@ -45,7 +47,9 @@ export class SpriteStack {
         this._ready = null;
 
         // Begin loading layers
-        if (imagePath) {
+        if (texture) {
+            this._ready = this._createLayersFromTexture(texture);
+        } else if (imagePath) {
             this._ready = this._createLayersFromImage(imagePath);
         } else {
             // No image: create default colored layers
@@ -57,26 +61,65 @@ export class SpriteStack {
     async ready() {
         // Returns a promise that resolves when layers are ready
         return this._ready;
-    }
-
-    async _createLayersFromImage(imgPath) {
-        // Load the full image
-        const baseTexture = await PIXI.BaseTexture.from(imgPath);
-
-        const imgWidth = baseTexture.width;
-        const imgHeight = baseTexture.height;
+    }    async _createLayersFromTexture(texture) {
+        // Use the pre-loaded texture to create layers
+        const source = texture.source || texture.baseTexture;
+        const imgWidth = texture.width;
+        const imgHeight = texture.height;
         const layerHeight = Math.floor(imgHeight / this.numLayers);
 
         this.layers = [];
 
         for (let i = 0; i < this.numLayers; i++) {
-            // Each layer rect: (x=0, y=imgHeight - (i+1)*layerHeight, width=imgWidth, height=layerHeight)
+            // Each layer rect: bottom to top stacking
+            // Layer 0 (bottom) starts at the bottom of the image
             const yStart = imgHeight - (i + 1) * layerHeight;
 
             const rect = new PIXI.Rectangle(0, yStart, imgWidth, layerHeight);
-            const texture = new PIXI.Texture(baseTexture, rect);
+            
+            // Create new texture from the source with the rectangle
+            const layerTexture = new PIXI.Texture({
+                source: source,
+                frame: rect
+            });
 
-            const sprite = new PIXI.Sprite(texture);
+            const sprite = new PIXI.Sprite(layerTexture);
+
+            // Apply global scale
+            sprite.scale.set(GLOBAL_SCALE);
+
+            this.layers.push(sprite);
+        }
+
+        // Set width and height based on first layer
+        if (this.layers.length > 0) {
+            this.width = this.layers[0].width;
+            this.height = this.layers[0].height;
+        }
+    }    async _createLayersFromImage(imgPath) {
+        // Load the full image using modern PIXI.js Assets API
+        const texture = await PIXI.Assets.load(imgPath);
+        
+        const source = texture.source || texture.baseTexture;
+        const imgWidth = texture.width;
+        const imgHeight = texture.height;
+        const layerHeight = Math.floor(imgHeight / this.numLayers);
+
+        this.layers = [];
+
+        for (let i = 0; i < this.numLayers; i++) {
+            // Each layer rect: bottom to top stacking
+            const yStart = imgHeight - (i + 1) * layerHeight;
+
+            const rect = new PIXI.Rectangle(0, yStart, imgWidth, layerHeight);
+            
+            // Create new texture from the source with the rectangle
+            const layerTexture = new PIXI.Texture({
+                source: source,
+                frame: rect
+            });
+
+            const sprite = new PIXI.Sprite(layerTexture);
 
             // Apply global scale
             sprite.scale.set(GLOBAL_SCALE);
@@ -197,9 +240,13 @@ export class SpriteStack {
         }
 
         container.addChild(shadowContainer);
-    }
+    }    draw(container, x, y, rotation = 0, drawShadow = true, tiltAmount = 0) {
+        // Wait for layers to be ready before drawing
+        if (this.layers.length === 0) {
+            console.warn('SpriteStack layers not ready yet');
+            return;
+        }
 
-    draw(container, x, y, rotation = 0, drawShadow = true, tiltAmount = 0) {
         // Clear previous container children
         this.container.removeChildren();
 
@@ -211,7 +258,7 @@ export class SpriteStack {
         // Draw layers bottom to top
         for (let i = 0; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            if (!layer) continue;
+            if (!layer || !layer.texture) continue;
 
             // Clone sprite to avoid modifying original
             const sprite = new PIXI.Sprite(layer.texture);
@@ -227,7 +274,9 @@ export class SpriteStack {
             sprite.rotation = -rotation * (Math.PI / 180);
 
             this.container.addChild(sprite);
-        }        // Apply outline filter if enabled
+        }
+
+        // Apply outline filter if enabled
         if (this.outlineEnabled) {
             // For now, we'll implement a simple outline using a border effect
             // This is a simplified version since pixi-filters may not be available

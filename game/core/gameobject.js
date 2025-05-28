@@ -23,9 +23,9 @@ export class GameObject extends PIXI.Sprite {
         outlineOffset = 1,
         shadowEnabled = true
     } = {}) {
-        // Load texture from imagePath if provided, otherwise use texture or fallback
+        // Use provided texture, or load from imagePath, or fallback to white texture
         let loadedTexture = texture;
-        if (imagePath && !texture) {
+        if (!loadedTexture && imagePath) {
             loadedTexture = PIXI.Texture.from(imagePath);
         }
         if (!loadedTexture) {
@@ -38,6 +38,7 @@ export class GameObject extends PIXI.Sprite {
         this.y = y;        // Create sprite stack for rendering
         this.spriteStack = new SpriteStack({
             texture: loadedTexture,
+            imagePath: imagePath,
             numLayers,
             layerOffset: layerOffset * GameObject.Scale,
             defaultWidth: width,

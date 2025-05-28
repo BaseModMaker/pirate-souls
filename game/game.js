@@ -1,4 +1,4 @@
-import { Application, Graphics, Text as PixiText } from 'pixi.js';
+import { Application, Graphics, Text as PixiText, Assets } from 'pixi.js';
 import { Text } from './utils/text.js';
 import { Entity } from './core/entity.js';
 import { GameObject } from './core/gameobject.js';
@@ -6,6 +6,7 @@ import { PlayerController } from './controllers/player_controller.js';
 import { Sun } from './core/sun.js';
 import { ShadowManager } from './core/shadow.js';
 import { Camera } from './core/camera.js';
+import { LoadingScreen } from './core/loading.js';
 
 /**
  * Represents the current state of all inputs.
@@ -102,8 +103,7 @@ class InputHandler {
         
         // Don't reset anyKeyPressed here - let it be handled after events are processed
     }
-    
-    copyState(source, destination) {
+      copyState(source, destination) {
         destination.keys = { ...source.keys };
         destination.leftMouse = source.leftMouse;
         destination.rightMouse = source.rightMouse;
@@ -114,15 +114,110 @@ class InputHandler {
 }
 
 /**
+ * Asset Manager for optimized loading using PIXI.js Assets
+ */
+class AssetManager {
+    constructor() {
+        this.bundles = {};
+        this.loaded = {};
+    }    /**
+     * Initialize and register all game assets using manifest
+     */
+    async initAssets(assetPath, imagePath, onProgress = null) {
+        try {
+            // Try to load manifest first
+            onProgress?.(0.1, 'Loading asset manifest...');
+            const manifestUrl = `${assetPath}/manifest.json`;
+            await Assets.init({ manifest: manifestUrl });
+            
+            // Load bundles from manifest with progress tracking
+            onProgress?.(0.3, 'Loading game sprites...');
+            const gameSprites = await Assets.loadBundle('game-sprites');
+            
+            onProgress?.(0.7, 'Loading game fonts...');
+            const gameFonts = await Assets.loadBundle('game-fonts').catch(() => ({}));
+            
+            this.loaded = { 
+                ...this.loaded, 
+                ...gameSprites, 
+                ...gameFonts 
+            };
+            
+            onProgress?.(1.0, 'Assets loaded successfully!');
+            console.log('Assets loaded from manifest:', Object.keys(this.loaded));
+        } catch (error) {
+            console.warn('Failed to load manifest, falling back to manual loading:', error);
+            
+            // Fallback to manual asset loading
+            onProgress?.(0.2, 'Setting up manual asset loading...');
+            Assets.addBundle('game-sprites', {
+                'submarine': `${imagePath}/yellow-submarine.png`,
+                'kelp': `${imagePath}/kelp-6x6x18.png`,
+                'tree': `${imagePath}/tree.png`,
+                'rock': `${imagePath}/rock-31x27x26.png`,
+                'clam': `${imagePath}/clam-26x21x3.png`,
+                'cannonball': `${imagePath}/cannonball-3x3x2.png`,
+                'cavefloor': `${imagePath}/cavefloor.jpg`,
+                'seafloor': `${imagePath}/seafloor.png`
+            });
+
+            // Load the game sprites bundle
+            onProgress?.(0.6, 'Loading sprites manually...');
+            const gameSprites = await Assets.loadBundle('game-sprites');
+            this.loaded = { ...this.loaded, ...gameSprites };
+            
+            onProgress?.(1.0, 'Assets loaded successfully!');
+            console.log('Assets loaded manually:', Object.keys(this.loaded));
+        }
+        
+        return this.loaded;
+    }
+
+    /**
+     * Get a loaded texture by name
+     */
+    getTexture(name) {
+        if (this.loaded[name]) {
+            return this.loaded[name];
+        }
+        console.warn(`Texture '${name}' not found. Available textures:`, Object.keys(this.loaded));
+        return null;
+    }
+
+    /**
+     * Preload additional assets
+     */
+    async loadAdditionalAssets(assets) {
+        const loaded = await Assets.load(assets);
+        this.loaded = { ...this.loaded, ...loaded };
+        return loaded;
+    }
+
+    /**
+     * Check if all required textures are loaded
+     */
+    validateTextures(requiredTextures) {
+        const missing = requiredTextures.filter(name => !this.loaded[name]);
+        if (missing.length > 0) {
+            console.warn('Missing textures:', missing);
+            return false;
+        }
+        return true;
+    }
+}
+
+/**
  * Main game class for Abyssal Gears: Depths of Iron and Steam.
  */
-class Game {
-    constructor(screenWidth, screenHeight, assetPath = "", fontPath = "", imagePath = "") {
+class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath = "", imagePath = "") {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.assetPath = assetPath;
         this.fontPath = fontPath;
         this.imagePath = imagePath;
+        
+        // Asset manager
+        this.assetManager = new AssetManager();
         
         // Game state
         this.running = true;
@@ -168,8 +263,7 @@ class Game {
         this.lastTime = performance.now();
         this.frameCount = 0;
         this.fps = 60;
-    }
-      async init() {
+    }    async init() {
         // Create PIXI application
         this.app = new Application();
         await this.app.init({ 
@@ -184,6 +278,34 @@ class Game {
         // Set global reference for app (needed by SpriteStack)
         window.gameApp = this.app;
         
+        // Create and show loading screen
+        const loadingScreen = new LoadingScreen(this.app);
+        loadingScreen.show();
+        
+        // Initialize and load assets with progress tracking
+        console.log('Loading game assets...');
+        await this.assetManager.initAssets(
+            this.assetPath, 
+            this.imagePath,
+            (progress, message) => {
+                loadingScreen.updateProgress(progress, message);
+            }
+        );
+        
+        // Add a small delay to show final loading message
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Validate that all required textures are loaded
+        const requiredTextures = ['submarine', 'kelp', 'tree', 'rock', 'clam'];
+        if (!this.assetManager.validateTextures(requiredTextures)) {
+            loadingScreen.hide();
+            throw new Error('Failed to load required game textures');
+        }
+        
+        // Hide loading screen
+        loadingScreen.hide();
+        console.log('Assets loaded successfully!');
+        
         // Setup camera
         this.camera = new Camera(this.screenWidth, this.screenHeight);
         
@@ -195,11 +317,10 @@ class Game {
         this.inputHandler = new InputHandler();
         
         // Create player submarine entity
-        const submarineImgPath = `${this.imagePath}/yellow-submarine.png`;
         this.player = new Entity({
             x: 0,
             y: 0,
-            imagePath: submarineImgPath,
+            texture: this.assetManager.getTexture('submarine'),
             numLayers: 24,  // yellow-submarine.png is 32x16x24
             width: 32,
             height: 16,
@@ -236,39 +357,32 @@ class Game {
         // Start game loop
         this.app.ticker.add(() => this.gameLoop());
     }
-    
-    async createDungeonObjects() {
+      async createDungeonObjects() {
         this.worldObjects = [];
         this.wallObjects = [];
         
-        // Load image paths
-        const kelpImgPath = `${this.imagePath}/kelp-6x6x18.png`;
-        const treeImgPath = `${this.imagePath}/tree.png`;
-        const rockImgPath = `${this.imagePath}/rock-31x27x26.png`;
-        const clamImgPath = `${this.imagePath}/clam-26x21x3.png`;
-        
         // Create cave walls
-        await this.createCaveWalls(treeImgPath);
+        await this.createCaveWalls();
         
         // Track placed positions for spacing
         const placedPositions = [];
         
         // Add kelp
-        await this.placeObjects(kelpImgPath, 5, 100, placedPositions, {
+        await this.placeObjects('kelp', 5, 100, placedPositions, {
             numLayers: 18, width: 6, height: 6, 
             outlineEnabled: this.drawOutline, outlineColor: 0x000000, 
             outlineThickness: 2, outlineOffset: 8
         });
         
         // Add rocks
-        await this.placeObjects(rockImgPath, 3, 120, placedPositions, {
+        await this.placeObjects('rock', 3, 120, placedPositions, {
             numLayers: 26, width: 31, height: 27,
             outlineEnabled: this.drawOutline, outlineColor: 0x000000,
             outlineThickness: 2, outlineOffset: 12
         });
         
         // Add clams
-        await this.placeObjects(clamImgPath, 5, 80, placedPositions, {
+        await this.placeObjects('clam', 5, 80, placedPositions, {
             numLayers: 3, width: 26, height: 21,
             outlineEnabled: this.drawOutline, outlineColor: 0x000000,
             outlineThickness: 2, outlineOffset: 1
@@ -278,8 +392,13 @@ class Game {
         this.shadowManager.registerObjects(this.worldObjects);
         this.shadowManager.registerObjects(this.wallObjects);
     }
-    
-    async placeObjects(imgPath, numObjects, minSpacing, placedPositions, options) {
+      async placeObjects(textureKey, numObjects, minSpacing, placedPositions, options) {
+        const texture = this.assetManager.getTexture(textureKey);
+        if (!texture) {
+            console.warn(`Texture '${textureKey}' not found, skipping object placement`);
+            return;
+        }
+
         for (let i = 0; i < numObjects; i++) {
             for (let attempt = 0; attempt < 10; attempt++) {
                 const x = Math.random() * (this.caveWidth - this.wallThickness * 2 - 100) - this.caveWidth/2 + this.wallThickness + 50;
@@ -299,7 +418,7 @@ class Game {
                     const obj = new GameObject({
                         x,
                         y,
-                        imagePath: imgPath,
+                        texture: texture,
                         shadowEnabled: this.drawShadows,
                         ...options
                     });
@@ -309,8 +428,12 @@ class Game {
             }
         }
     }
-    
-    async createCaveWalls(wallImgPath) {
+      async createCaveWalls() {
+        const wallTexture = this.assetManager.getTexture('tree');
+        if (!wallTexture) {
+            console.warn('Wall texture not found, creating walls without texture');
+        }
+
         const wallSpacing = 80;
         
         // Add corner pieces
@@ -322,28 +445,27 @@ class Game {
         ];
         
         for (const [x, y] of corners) {
-            this.addWallSegment(x, y, wallImgPath);
+            this.addWallSegment(x, y, wallTexture);
         }
         
         // Create walls
         for (let x = -this.caveWidth/2 + wallSpacing; x < this.caveWidth/2; x += wallSpacing) {
             // Top and bottom walls
-            this.addWallSegment(x, -this.caveHeight/2, wallImgPath);
-            this.addWallSegment(x, this.caveHeight/2, wallImgPath);
+            this.addWallSegment(x, -this.caveHeight/2, wallTexture);
+            this.addWallSegment(x, this.caveHeight/2, wallTexture);
         }
         
         for (let y = -this.caveHeight/2 + wallSpacing; y < this.caveHeight/2; y += wallSpacing) {
             // Left and right walls
-            this.addWallSegment(-this.caveWidth/2, y, wallImgPath);
-            this.addWallSegment(this.caveWidth/2, y, wallImgPath);
+            this.addWallSegment(-this.caveWidth/2, y, wallTexture);
+            this.addWallSegment(this.caveWidth/2, y, wallTexture);
         }
     }
-    
-    addWallSegment(x, y, imgPath) {
+      addWallSegment(x, y, texture) {
         const wall = new GameObject({
             x,
             y,
-            imagePath: imgPath,
+            texture: texture,
             numLayers: 24,
             layerOffset: 0.5,
             width: 60,

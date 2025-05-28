@@ -1,0 +1,67 @@
+{
+  "bundles": [
+    {
+      "name": "game-sprites",
+      "assets": [
+        {
+          "alias": "submarine",
+          "src": "assets/images/yellow-submarine.png"
+        },
+        {
+          "alias": "kelp",
+          "src": "assets/images/kelp-6x6x18.png"
+        },
+        {
+          "alias": "tree",
+          "src": "assets/images/tree.png"
+        },
+        {
+          "alias": "rock",
+          "src": "assets/images/rock-31x27x26.png"
+        },
+        {
+          "alias": "clam",
+          "src": "assets/images/clam-26x21x3.png"
+        },
+        {
+          "alias": "cannonball",
+          "src": "assets/images/cannonball-3x3x2.png"
+        },
+        {
+          "alias": "cavefloor",
+          "src": "assets/images/cavefloor.jpg"
+        },
+        {
+          "alias": "seafloor",
+          "src": "assets/images/seafloor.png"
+        }
+      ]
+    },
+    {
+      "name": "game-fonts",
+      "assets": [
+        {
+          "alias": "blocky",
+          "src": "assets/fonts/blocky.ttf"
+        }
+      ]
+    },
+    {
+      "name": "game-sounds",
+      "assets": [
+        {
+          "alias": "shoot",
+          "src": "assets/sounds/shoot.ogg"
+        },
+        {
+          "alias": "shoot2",
+          "src": "assets/sounds/shoot2.ogg"
+        },
+        {
+          "alias": "explosion",
+          "src": "assets/sounds/shipexplosion.ogg"
+        }
+      ]
+    }
+  ]
+}
