@@ -7,6 +7,7 @@ import { Sun } from './core/sun.js';
 import { ShadowManager } from './core/shadow.js';
 import { Camera } from './core/camera.js';
 import { LoadingScreen } from './core/loading.js';
+import { UIManager } from './core/ui.js';
 
 /**
  * Represents the current state of all inputs.
@@ -248,16 +249,13 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         this.sun = null;
         this.shadowManager = null;
         this.inputHandler = null;
-        
-        // Cave dimensions
+          // Cave dimensions
         this.caveWidth = 3200;
         this.caveHeight = 3200;
         this.wallThickness = 80;
         
-        // UI elements
-        this.titleText = null;
-        this.startText = null;
-        this.controlsText = null;
+        // UI Manager
+        this.uiManager = null;
         
         // FPS tracking
         this.lastTime = performance.now();
@@ -344,12 +342,23 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         
         // Create dungeon objects
         await this.createDungeonObjects();
-        
-        // Apply initial shadow settings
+          // Apply initial shadow settings
         this.shadowManager.updateAll(this.sun);
         
-        // Setup UI
-        await this.setupUI();
+        // Setup UI Manager
+        this.uiManager = new UIManager(this.app);
+        
+        // Listen for game start event from UI
+        this.app.stage.on('gameStart', () => {
+            this.gameStarted = true;
+        });
+          // Add UI container to camera UI container (so it doesn't rotate with camera)
+        this.camera.getUIContainer().addChild(this.uiManager.getContainer());
+        
+        // Setup window resize handler for UI
+        window.addEventListener('resize', () => {
+            this.uiManager.resize(window.innerWidth, window.innerHeight);
+        });
         
         // Add to camera container
         this.app.stage.addChild(this.camera.getContainer());
@@ -476,46 +485,16 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         // Prevent duplicates
         if (!this.wallObjects.find(w => w.x === x && w.y === y)) {
             this.wallObjects.push(wall);
-            this.worldObjects.push(wall);
-        }
+            this.worldObjects.push(wall);        }
     }
     
-    async setupUI() {
-        const textX = this.screenWidth / 2 - 200;
-        const textY = this.screenHeight / 4;
-        const startX = this.screenWidth / 2 - 150;
-        const startY = this.screenHeight / 3;
-        
-        const controlsText = "Controls: WASD to move, SPACE to boost/teleport";
-        
-        // Try to load custom font
-        const fontFile = `${this.fontPath}/blocky.ttf`;
-        
-        try {
-            // Create text objects
-            this.titleText = new Text(fontFile, 50, "Abyssal Gears: Depths of Iron and Steam", [255, 255, 255], textX, textY);
-            this.startText = new Text(fontFile, 25, "Press any key to dive into the depths", [255, 255, 255], startX, startY);
-            this.controlsText = new Text(fontFile, 20, controlsText, [255, 255, 255], startX - 50, startY + 40);
-        } catch (e) {
-            console.log("Using fallback font");
-            // Create fallback text
-            this.titleText = new Text(null, 50, "Abyssal Gears: Depths of Iron and Steam", [255, 255, 255], textX, textY);
-            this.startText = new Text(null, 25, "Press any key to dive into the depths", [255, 255, 255], startX, startY);
-            this.controlsText = new Text(null, 20, controlsText, [255, 255, 255], startX - 50, startY + 40);
-        }
-    }
-      handleEvents() {
+    handleEvents() {
         // Update input handler
         this.inputHandler.update();
         
         // Check for quit
         if (this.inputHandler.currentState.quitRequested) {
             this.running = false;
-        }
-        
-        // Start game on any key press
-        if (!this.gameStarted && this.inputHandler.currentState.anyKeyPressed) {
-            this.gameStarted = true;
         }
         
         // Reset one-time events after processing
@@ -550,23 +529,25 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         
         this.player.x = Math.max(minX, Math.min(this.player.x, maxX));
         this.player.y = Math.max(minY, Math.min(this.player.y, maxY));
-    }
-      draw() {
+    }    draw() {
         // Clear both containers
         const worldContainer = this.camera.getWorldContainer();
         const uiContainer = this.camera.getUIContainer();
         worldContainer.removeChildren();
-        uiContainer.removeChildren();
+        
+        // Keep UI container children (UI Manager handles its own drawing)
+        // Only remove UI elements that aren't from UIManager
+        const uiChildren = [...uiContainer.children];
+        for (const child of uiChildren) {
+            if (child !== this.uiManager.getContainer()) {
+                uiContainer.removeChild(child);
+            }
+        }
         
         // Create background gradient (add to world container)
         this.drawBackground(worldContainer);
         
-        if (!this.gameStarted) {
-            // Draw menu screen (add to world container since it should rotate with the view)
-            this.titleText.draw(worldContainer);
-            this.startText.draw(worldContainer);
-            this.controlsText.draw(worldContainer);
-        } else {
+        if (this.uiManager.isGameStarted()) {
             // Draw game world
             this.drawGameWorld(worldContainer, uiContainer);
         }
@@ -645,53 +626,20 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             this.performanceMode,
             270 // Always facing up on screen
         );
-        
-        // Draw UI elements (these go to the UI container and won't rotate)
-        this.drawStaminaBar(uiContainer);
-        this.drawFPS(uiContainer);
-    }
-      drawStaminaBar(container) {
+          // Draw UI elements using UI Manager
         if (this.playerController.stamina !== undefined && this.playerController.maxStamina !== undefined) {
-            const staminaWidth = 200;
-            const staminaHeight = 15;
-            const staminaX = this.camera.width - staminaWidth - 20;
-            const staminaY = this.camera.height - staminaHeight - 20;
-            
-            // Background
-            const bg = new Graphics();
-            bg.beginFill(0x323232);
-            bg.drawRect(staminaX, staminaY, staminaWidth, staminaHeight);
-            bg.endFill();
-            container.addChild(bg);
-            
-            // Current stamina
-            const currentWidth = (this.playerController.stamina / this.playerController.maxStamina) * staminaWidth;
-            const staminaColor = this.playerController.staminaLocked ? 0xff3232 : 0x3296ff;
-            
-            const stamina = new Graphics();
-            stamina.beginFill(staminaColor);
-            stamina.drawRect(staminaX, staminaY, currentWidth, staminaHeight);
-            stamina.endFill();
-            container.addChild(stamina);
-            
-            // Border
-            const border = new Graphics();
-            border.lineStyle(1, 0xc8c8c8);
-            border.drawRect(staminaX, staminaY, staminaWidth, staminaHeight);
-            container.addChild(border);
-            
-            // Label
-            const label = new PixiText('STAMINA', {
-                fontFamily: 'Arial',
-                fontSize: 12,
-                fill: 0xffffff
-            });
-            label.x = staminaX;
-            label.y = staminaY - 25;
-            container.addChild(label);
+            this.uiManager.updateStaminaBar(
+                this.playerController.stamina, 
+                this.playerController.maxStamina, 
+                this.playerController.staminaLocked
+            );
         }
+        
+        // Update FPS
+        this.updateFPS();        this.uiManager.updateFPS(this.fps);
     }
-      drawFPS(container) {
+    
+    updateFPS() {
         // Calculate FPS
         const now = performance.now();
         this.frameCount++;
@@ -701,15 +649,6 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             this.frameCount = 0;
             this.lastTime = now;
         }
-        
-        const fpsText = new PixiText(`FPS: ${this.fps}`, {
-            fontFamily: 'Arial',
-            fontSize: 14,
-            fill: 0xffffff
-        });
-        fpsText.x = 10;
-        fpsText.y = 10;
-        container.addChild(fpsText);
     }
     
     getVisibleObjects() {
