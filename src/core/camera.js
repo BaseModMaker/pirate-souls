@@ -27,18 +27,14 @@ export class Camera {
   }
 
   follow(targetX, targetY, targetRotation = null) {
+    // Smooth follow position
+    this.x += (targetX - this.x) * this.smoothing;
+    this.y += (targetY - this.y) * this.smoothing;
+    
+    // Only apply rotation if specifically requested
     if (targetRotation !== null) {
-      const rad = (targetRotation * Math.PI) / 180;
-
-      // Smooth follow position
-      this.x += (targetX - this.x) * this.smoothing;
-      this.y += (targetY - this.y) * this.smoothing;
-
       // Counter-rotate world to keep player upright
       this.rotation = (-targetRotation) % 360;
-    } else {
-      this.x += (targetX - this.x) * this.smoothing;
-      this.y += (targetY - this.y) * this.smoothing;
     }
 
     this._updateTransform();

@@ -515,7 +515,8 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             // Keep player in cave boundaries
             this.keepPlayerInCave();
             
-            // Update camera to follow player
+            // Update camera to follow player position AND rotation
+            // This will rotate the world around the submarine
             this.camera.follow(this.player.x, this.player.y, this.player.rotation);
         }
     }
@@ -614,7 +615,7 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             );
         }
         
-        // Draw player at center
+        // Draw player at center with FIXED rotation (270 = facing up)
         const centerX = this.camera.width / 2;
         const centerY = this.camera.height / 2;
         
@@ -624,7 +625,7 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             centerY,
             this.shadowManager.enabled,
             this.performanceMode,
-            270 // Always facing up on screen
+            270 // Always facing up on screen, never rotating visually
         );
         
         // Draw direction indicator arrow (red)

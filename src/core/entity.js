@@ -64,16 +64,15 @@ export class Entity extends GameObject {
     applyPhysics() {
         this.speed *= this.friction;
 
-        // Calculate movement direction based on the entity's rotation
-        // This is where we align with the arrow direction
+        // Movement direction is fixed relative to world coordinates
+        // No matter how submarine is rotated visually, "up" is always forward
+        // The actual rotation affects the world view instead
         const angleRad = this.rotation * (Math.PI / 180);
         
-        // Calculate movement based directly on the rotation angle
-        // Negative sin for X and positive cos for Y gives us forward movement
-        // in the direction we're facing (rotation 0 = up, 90 = right, etc.)
+        // Move based on current rotation
         const moveX = -Math.sin(angleRad) * this.speed;
         const moveY = Math.cos(angleRad) * this.speed;
-
+        
         this.x += moveX;
         this.y += moveY;
     }
