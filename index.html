@@ -57,7 +57,7 @@
             document.getElementById('loading').style.display = 'none';
             
             // Import and run the game
-            await import('./game/game.js');
+            await import('./src/game.js');
         } catch (error) {
             console.error('Error loading game:', error);
             document.getElementById('loading').style.display = 'none';
