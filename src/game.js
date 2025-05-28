@@ -261,7 +261,15 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         this.lastTime = performance.now();
         this.frameCount = 0;
         this.fps = 60;
-    }    async init() {
+        
+        // Reusable graphics objects
+        this.directionArrow = null;
+        this.arrowHead = null;
+        this.background = null;
+        this.bubbleGraphics = [];  // Array to hold bubble graphics objects
+    }
+
+    async init() {
         // Create PIXI application
         this.app = new Application();
         await this.app.init({ 
@@ -359,6 +367,11 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         window.addEventListener('resize', () => {
             this.uiManager.resize(window.innerWidth, window.innerHeight);
         });
+        
+        // Create reusable graphics objects
+        this.directionArrow = new Graphics();
+        this.arrowHead = new Graphics();
+        this.background = new Graphics();
         
         // Add to camera container
         this.app.stage.addChild(this.camera.getContainer());
@@ -554,7 +567,7 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         }
     }
       drawBackground(container) {
-        const background = new Graphics();
+        this.background.clear();
         
         // Create gradient background
         for (let y = 0; y < this.camera.height; y++) {
@@ -562,28 +575,36 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
             const blue = 40 + Math.floor(40 * (1 - depthFactor));
             const green = 65 + Math.floor(15 * (1 - depthFactor));
             
-            background.lineStyle(1, (10 << 16) + (green << 8) + blue);
-            background.moveTo(0, y);
-            background.lineTo(this.camera.width, y);
+            this.background.lineStyle(1, (10 << 16) + (green << 8) + blue);
+            this.background.moveTo(0, y);
+            this.background.lineTo(this.camera.width, y);
         }
         
-        container.addChild(background);
+        container.addChild(this.background);
     }
       drawGameWorld(worldContainer, uiContainer) {
         // Get visible objects
         const visibleObjects = this.getVisibleObjects();
-          // Draw bubbles
-        for (const bubble of this.playerController.bubbles) {
+        
+        // Ensure we have enough bubble graphics objects
+        while (this.bubbleGraphics.length < this.playerController.bubbles.length) {
+            this.bubbleGraphics.push(new Graphics());
+        }
+          
+        // Draw bubbles
+        for (let i = 0; i < this.playerController.bubbles.length; i++) {
+            const bubble = this.playerController.bubbles[i];
             const [screenX, screenY] = this.camera.worldToScreen(bubble.x, bubble.y);
             
             if (screenX >= -50 && screenX <= this.camera.width + 50 &&
                 screenY >= -50 && screenY <= this.camera.height + 50) {
                 
-                const bubbleGraphics = new Graphics();
-                bubbleGraphics.beginFill(0x99ccff, bubble.alpha / 255);
-                bubbleGraphics.drawCircle(screenX, screenY, bubble.size);
-                bubbleGraphics.endFill();
-                worldContainer.addChild(bubbleGraphics);
+                const bubbleGraphic = this.bubbleGraphics[i];
+                bubbleGraphic.clear();
+                bubbleGraphic.beginFill(0x99ccff, bubble.alpha / 255);
+                bubbleGraphic.drawCircle(screenX, screenY, bubble.size);
+                bubbleGraphic.endFill();
+                worldContainer.addChild(bubbleGraphic);
             }
         }
         
@@ -629,7 +650,7 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         );
         
         // Draw direction indicator arrow (red)
-        const directionArrow = new Graphics(); 
+        this.directionArrow.clear();
         
         // Get the exact movement angle from the entity's rotation
         // No need for directionOffset anymore since we've aligned the movement
@@ -649,7 +670,7 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         const shaftEndY = centerY + moveY * (arrowLength - arrowHeadSize);
         
         // Draw the line directly with lineStyle
-        directionArrow.lineStyle({
+        this.directionArrow.lineStyle({
             width: lineWidth,
             color: 0xFF0000,
             cap: 'round',
@@ -657,21 +678,21 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         });
         
         // Draw the shaft
-        directionArrow.moveTo(centerX, centerY);
-        directionArrow.lineTo(shaftEndX, shaftEndY);
+        this.directionArrow.moveTo(centerX, centerY);
+        this.directionArrow.lineTo(shaftEndX, shaftEndY);
         
         // Add to world container
-        worldContainer.addChild(directionArrow);
+        worldContainer.addChild(this.directionArrow);
         
         // Draw arrow head
-        const arrowHead = new Graphics();
-        arrowHead.beginFill(0xFF0000);
+        this.arrowHead.clear();
+        this.arrowHead.beginFill(0xFF0000);
         
         // Calculate the angle from the movement vector
         const arrowAngle = Math.atan2(moveY, moveX);
         
         // Draw the arrowhead directly at the end of the shaft
-        arrowHead.position.set(shaftEndX, shaftEndY);
+        this.arrowHead.position.set(shaftEndX, shaftEndY);
         
         // Draw a triangle pointing in the direction of movement
         const headBackX = -Math.cos(arrowAngle) * arrowHeadSize;
@@ -679,14 +700,14 @@ class Game {    constructor(screenWidth, screenHeight, assetPath = "", fontPath 
         const headRightX = -Math.sin(arrowAngle) * arrowHeadSize/2;
         const headRightY = Math.cos(arrowAngle) * arrowHeadSize/2;
         
-        arrowHead.moveTo(0, 0);
-        arrowHead.lineTo(headBackX + headRightX, headBackY + headRightY);
-        arrowHead.lineTo(headBackX - headRightX, headBackY - headRightY);
-        arrowHead.closePath();
-        arrowHead.endFill();
+        this.arrowHead.moveTo(0, 0);
+        this.arrowHead.lineTo(headBackX + headRightX, headBackY + headRightY);
+        this.arrowHead.lineTo(headBackX - headRightX, headBackY - headRightY);
+        this.arrowHead.closePath();
+        this.arrowHead.endFill();
         
         // Add arrowhead to world container
-        worldContainer.addChild(arrowHead);
+        worldContainer.addChild(this.arrowHead);
         
         // Draw UI elements using UI Manager
         if (this.playerController.stamina !== undefined && this.playerController.maxStamina !== undefined) {
