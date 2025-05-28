@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import { Application, Graphics, Text as PixiText } from 'pixi.js';
 import { Text } from './utils/text.js';
 import { Entity } from './core/entity.js';
 import { GameObject } from './core/gameobject.js';
@@ -172,19 +172,20 @@ class Game {
         this.frameCount = 0;
         this.fps = 60;
     }
-    
-    async init() {
+      async init() {
         // Create PIXI application
-        this.app = new PIXI.Application();
+        this.app = new Application();
         await this.app.init({ 
             background: '#0a4265', 
             width: this.screenWidth, 
             height: this.screenHeight,
             resizeTo: window 
         });
-        
-        // Add canvas to DOM
+          // Add canvas to DOM
         document.body.appendChild(this.app.canvas);
+        
+        // Set global reference for app (needed by SpriteStack)
+        window.gameApp = this.app;
         
         // Setup camera
         this.camera = new Camera(this.screenWidth, this.screenHeight);
@@ -447,9 +448,8 @@ class Game {
             this.drawGameWorld(container);
         }
     }
-    
-    drawBackground(container) {
-        const background = new PIXI.Graphics();
+      drawBackground(container) {
+        const background = new Graphics();
         
         // Create gradient background
         for (let y = 0; y < this.camera.height; y++) {
@@ -468,15 +468,14 @@ class Game {
     drawGameWorld(container) {
         // Get visible objects
         const visibleObjects = this.getVisibleObjects();
-        
-        // Draw bubbles
+          // Draw bubbles
         for (const bubble of this.playerController.bubbles) {
             const [screenX, screenY] = this.camera.worldToScreen(bubble.x, bubble.y);
             
             if (screenX >= -50 && screenX <= this.camera.width + 50 &&
                 screenY >= -50 && screenY <= this.camera.height + 50) {
                 
-                const bubbleGraphics = new PIXI.Graphics();
+                const bubbleGraphics = new Graphics();
                 bubbleGraphics.beginFill(0x99ccff, bubble.alpha / 255);
                 bubbleGraphics.drawCircle(screenX, screenY, bubble.size);
                 bubbleGraphics.endFill();
@@ -531,8 +530,7 @@ class Game {
         // Draw FPS counter
         this.drawFPS(container);
     }
-    
-    drawStaminaBar(container) {
+      drawStaminaBar(container) {
         if (this.playerController.stamina !== undefined && this.playerController.maxStamina !== undefined) {
             const staminaWidth = 200;
             const staminaHeight = 15;
@@ -540,7 +538,7 @@ class Game {
             const staminaY = this.camera.height - staminaHeight - 20;
             
             // Background
-            const bg = new PIXI.Graphics();
+            const bg = new Graphics();
             bg.beginFill(0x323232);
             bg.drawRect(staminaX, staminaY, staminaWidth, staminaHeight);
             bg.endFill();
@@ -550,20 +548,20 @@ class Game {
             const currentWidth = (this.playerController.stamina / this.playerController.maxStamina) * staminaWidth;
             const staminaColor = this.playerController.staminaLocked ? 0xff3232 : 0x3296ff;
             
-            const stamina = new PIXI.Graphics();
+            const stamina = new Graphics();
             stamina.beginFill(staminaColor);
             stamina.drawRect(staminaX, staminaY, currentWidth, staminaHeight);
             stamina.endFill();
             container.addChild(stamina);
             
             // Border
-            const border = new PIXI.Graphics();
+            const border = new Graphics();
             border.lineStyle(1, 0xc8c8c8);
             border.drawRect(staminaX, staminaY, staminaWidth, staminaHeight);
             container.addChild(border);
             
             // Label
-            const label = new PIXI.Text('STAMINA', {
+            const label = new PixiText('STAMINA', {
                 fontFamily: 'Arial',
                 fontSize: 12,
                 fill: 0xffffff
@@ -573,8 +571,7 @@ class Game {
             container.addChild(label);
         }
     }
-    
-    drawFPS(container) {
+      drawFPS(container) {
         // Calculate FPS
         const now = performance.now();
         this.frameCount++;
@@ -585,7 +582,7 @@ class Game {
             this.lastTime = now;
         }
         
-        const fpsText = new PIXI.Text(`FPS: ${this.fps}`, {
+        const fpsText = new PixiText(`FPS: ${this.fps}`, {
             fontFamily: 'Arial',
             fontSize: 14,
             fill: 0xffffff

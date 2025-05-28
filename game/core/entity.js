@@ -5,11 +5,11 @@ export class Entity extends GameObject {
     /**
      * An entity is a game object that can move and has physics.
      * @param {object} options - Entity configuration.
-     */
-    constructor({
+     */    constructor({
         x = 0,
         y = 0,
         texture = null,
+        imagePath = null,
         numLayers = 8,
         layerOffset = 0.5,
         width = 32,
@@ -26,6 +26,7 @@ export class Entity extends GameObject {
             x,
             y,
             texture,
+            imagePath,
             numLayers,
             layerOffset,
             width,
@@ -78,6 +79,10 @@ export class Entity extends GameObject {
         if (this.spriteStack) {
             this.spriteStack.setPosition(this.x, this.y);
         }
+    }
+
+    applyBoost() {
+        this.speed = Math.min(this.maxSpeed * 2, this.speed + this.acceleration * 2);
     }
 
     update(delta, ...args) {

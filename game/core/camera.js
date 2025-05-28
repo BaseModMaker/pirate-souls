@@ -1,7 +1,5 @@
 import * as PIXI from 'pixi.js';
 
-import * as PIXI from 'pixi.js';
-
 export class Camera {
   constructor(screenWidth, screenHeight) {
     this.width = screenWidth;
