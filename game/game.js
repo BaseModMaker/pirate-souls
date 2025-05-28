@@ -87,8 +87,7 @@ class InputHandler {
             event.preventDefault(); // Disable right-click menu
         });
     }
-    
-    update() {
+      update() {
         // Store previous state
         this.copyState(this.currentState, this.previousState);
         
@@ -101,9 +100,7 @@ class InputHandler {
             'Space': this.pressedKeys['Space'] // Boost/teleport
         };
         
-        // Reset one-time events
-        this.currentState.anyKeyPressed = false;
-        this.currentState.quitRequested = false;
+        // Don't reset anyKeyPressed here - let it be handled after events are processed
     }
     
     copyState(source, destination) {
@@ -385,8 +382,7 @@ class Game {
             this.controlsText = new Text(null, 20, controlsText, [255, 255, 255], startX - 50, startY + 40);
         }
     }
-    
-    handleEvents() {
+      handleEvents() {
         // Update input handler
         this.inputHandler.update();
         
@@ -399,6 +395,10 @@ class Game {
         if (!this.gameStarted && this.inputHandler.currentState.anyKeyPressed) {
             this.gameStarted = true;
         }
+        
+        // Reset one-time events after processing
+        this.inputHandler.currentState.anyKeyPressed = false;
+        this.inputHandler.currentState.quitRequested = false;
     }
     
     update() {

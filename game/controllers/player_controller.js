@@ -105,12 +105,11 @@ export class PlayerController {
     if (inputState.rightMouse && this.fireCooldownRight === 0) {
       this._fireCannon(1);
       this.fireCooldownRight = this.fireRate;
-    }
-
-    // Handle tilt based on input
+    }    // Handle tilt based on input
     const targetTilt = (inputState.keys['KeyA'] ? -1 : 0) + (inputState.keys['KeyD'] ? 1 : 0);
     this.tiltAmount += (targetTilt - this.tiltAmount) * this.tiltSpeed;
-    this.entity.sprite.rotation += this.tiltAmount * 0.02;
+    // Note: Tilt effect can be applied to the spriteStack if needed
+    // this.entity.spriteStack.tiltAmount = this.tiltAmount * 0.02;
 
     // Bubble updates
     this._updateBubbles();

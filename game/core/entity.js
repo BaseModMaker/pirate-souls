@@ -71,14 +71,8 @@ export class Entity extends GameObject {
 
         const angleRad = effectiveRotation * (Math.PI / 180);
         const moveX = -Math.sin(angleRad) * this.speed;
-        const moveY = Math.cos(angleRad) * this.speed;
-
-        this.x += moveX;
+        const moveY = Math.cos(angleRad) * this.speed;        this.x += moveX;
         this.y += moveY;
-
-        if (this.spriteStack) {
-            this.spriteStack.setPosition(this.x, this.y);
-        }
     }
 
     applyBoost() {
