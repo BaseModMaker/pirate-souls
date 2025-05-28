@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pirate Souls - PixiJS Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 1000;
+        }
+
+        .error {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff6b6b;
+            font-size: 16px;
+            text-align: center;
+            max-width: 500px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>    <div id="loading" class="loading">Loading Pirate Souls...</div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <!-- Import the game script as a module with import maps -->
+    <script type="importmap">
+    {
+        "imports": {
+            "pixi.js": "./node_modules/pixi.js/dist/pixi.mjs"
+        }
+    }
+    </script>
+    
+    <script type="module">
+        try {
+            // Hide loading text once the script starts
+            document.getElementById('loading').style.display = 'none';
+            
+            // Import and run the game
+            await import('./game/game.js');
+        } catch (error) {
+            console.error('Error loading game:', error);
+            document.getElementById('loading').style.display = 'none';
+            const errorDiv = document.getElementById('error');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `
+                <h3>Failed to load game</h3>
+                <p>Error: ${error.message}</p>
+                <p>Make sure you're running this from a local server.</p>
+                <p>Try: <code>npx serve .</code> or <code>python -m http.server</code></p>
+            `;
+        }
+    </script>
+</body>
+</html>

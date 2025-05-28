@@ -19,3 +19,5 @@ Gemfile.lock
 
 # Ignore old game files
 /old_game
+
+/node_modules
