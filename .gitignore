@@ -20,4 +20,9 @@ Gemfile.lock
 # Ignore old game files
 /old_game
 
+# Ignore npm dependencies
+node_modules/
+npm-debug.log*
+.npm
+
 /node_modules
