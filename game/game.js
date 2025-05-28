@@ -429,23 +429,24 @@ class Game {
         this.player.x = Math.max(minX, Math.min(this.player.x, maxX));
         this.player.y = Math.max(minY, Math.min(this.player.y, maxY));
     }
-    
-    draw() {
-        // Clear camera container
-        const container = this.camera.getContainer();
-        container.removeChildren();
+      draw() {
+        // Clear both containers
+        const worldContainer = this.camera.getWorldContainer();
+        const uiContainer = this.camera.getUIContainer();
+        worldContainer.removeChildren();
+        uiContainer.removeChildren();
         
-        // Create background gradient
-        this.drawBackground(container);
+        // Create background gradient (add to world container)
+        this.drawBackground(worldContainer);
         
         if (!this.gameStarted) {
-            // Draw menu screen
-            this.titleText.draw(container);
-            this.startText.draw(container);
-            this.controlsText.draw(container);
+            // Draw menu screen (add to world container since it should rotate with the view)
+            this.titleText.draw(worldContainer);
+            this.startText.draw(worldContainer);
+            this.controlsText.draw(worldContainer);
         } else {
             // Draw game world
-            this.drawGameWorld(container);
+            this.drawGameWorld(worldContainer, uiContainer);
         }
     }
       drawBackground(container) {
@@ -464,8 +465,7 @@ class Game {
         
         container.addChild(background);
     }
-    
-    drawGameWorld(container) {
+      drawGameWorld(worldContainer, uiContainer) {
         // Get visible objects
         const visibleObjects = this.getVisibleObjects();
           // Draw bubbles
@@ -479,7 +479,7 @@ class Game {
                 bubbleGraphics.beginFill(0x99ccff, bubble.alpha / 255);
                 bubbleGraphics.drawCircle(screenX, screenY, bubble.size);
                 bubbleGraphics.endFill();
-                container.addChild(bubbleGraphics);
+                worldContainer.addChild(bubbleGraphics);
             }
         }
         
@@ -487,7 +487,7 @@ class Game {
         for (const cannonball of this.playerController.cannonballs) {
             const [screenX, screenY] = this.camera.worldToScreen(cannonball.x, cannonball.y);
             cannonball.drawAtPosition(
-                container,
+                worldContainer,
                 screenX,
                 screenY,
                 this.shadowManager.enabled,
@@ -502,7 +502,7 @@ class Game {
             const relativeAngle = this.camera.rotation;
             
             obj.drawAtPosition(
-                container,
+                worldContainer,
                 screenX,
                 screenY,
                 this.shadowManager.enabled,
@@ -516,7 +516,7 @@ class Game {
         const centerY = this.camera.height / 2;
         
         this.player.drawAtPosition(
-            container,
+            worldContainer,
             centerX,
             centerY,
             this.shadowManager.enabled,
@@ -524,11 +524,9 @@ class Game {
             270 // Always facing up on screen
         );
         
-        // Draw stamina bar
-        this.drawStaminaBar(container);
-        
-        // Draw FPS counter
-        this.drawFPS(container);
+        // Draw UI elements (these go to the UI container and won't rotate)
+        this.drawStaminaBar(uiContainer);
+        this.drawFPS(uiContainer);
     }
       drawStaminaBar(container) {
         if (this.playerController.stamina !== undefined && this.playerController.maxStamina !== undefined) {

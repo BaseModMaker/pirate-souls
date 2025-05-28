@@ -10,9 +10,20 @@ export class Camera {
     this.rotation = 0; // In degrees
     this.smoothing = 0.1;
 
-    // The container where world elements will be added
-    this.container = new PIXI.Container();
-    this.container.sortableChildren = true; // Optional: enables zIndex ordering
+    // Main container that holds both world and UI
+    this.mainContainer = new PIXI.Container();
+    
+    // The container where world elements will be added (this one rotates)
+    this.worldContainer = new PIXI.Container();
+    this.worldContainer.sortableChildren = true; // Optional: enables zIndex ordering
+    
+    // The container where UI elements will be added (this one stays fixed)
+    this.uiContainer = new PIXI.Container();
+    this.uiContainer.sortableChildren = true;
+    
+    // Add both containers to the main container
+    this.mainContainer.addChild(this.worldContainer);
+    this.mainContainer.addChild(this.uiContainer);
   }
 
   follow(targetX, targetY, targetRotation = null) {
@@ -32,18 +43,17 @@ export class Camera {
 
     this._updateTransform();
   }
-
   _updateTransform() {
-    // Center camera on target (negate position)
-    this.container.x = this.width / 2 - this.x;
-    this.container.y = this.height / 2 - this.y;
+    // Center camera on target (negate position) - only apply to world container
+    this.worldContainer.x = this.width / 2 - this.x;
+    this.worldContainer.y = this.height / 2 - this.y;
 
-    // Apply rotation around the screen center
+    // Apply rotation around the screen center - only to world container
     const rad = (this.rotation * Math.PI) / 180;
 
-    this.container.pivot.set(this.width / 2, this.height / 2);
-    this.container.position.set(this.width / 2, this.height / 2);
-    this.container.rotation = rad;
+    this.worldContainer.pivot.set(this.width / 2, this.height / 2);
+    this.worldContainer.position.set(this.width / 2, this.height / 2);
+    this.worldContainer.rotation = rad;
   }
 
   worldToScreen(worldX, worldY) {
@@ -100,8 +110,15 @@ export class Camera {
     this.y += dy;
     this._updateTransform();
   }
-
   getContainer() {
-    return this.container;
+    return this.mainContainer;
+  }
+  
+  getWorldContainer() {
+    return this.worldContainer;
+  }
+  
+  getUIContainer() {
+    return this.uiContainer;
   }
 }
