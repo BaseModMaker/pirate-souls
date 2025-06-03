@@ -115,44 +115,20 @@ class World {
   createAmbientEffects() {
     console.log("Creating ambient effects");
     
-    // Create simple bubble effects
-    this.createSimpleBubbles();
+    // Remove bubble creation entirely
+    // this.createSimpleBubbles();
     
-    // Create light rays
+    // Create light rays only
     this.createLightRays();
   }
   
   /**
    * Create simple bubble effects without using particle emitter
+   * This method is no longer called to prevent infinite bubble spawning
    */
   createSimpleBubbles() {
-    // Create several bubbles at random positions
-    for (let i = 0; i < 20; i++) {
-      const x = Phaser.Math.Between(-this.width/2, this.width/2);
-      const y = Phaser.Math.Between(0, this.height/2);
-      const size = Phaser.Math.Between(2, 8);
-      
-      const bubble = this.scene.add.circle(x, y, size, 0xffffff, 0.2);
-      bubble.setDepth(-990);
-      
-      // Animate the bubble rising
-      this.scene.tweens.add({
-        targets: bubble,
-        y: y - Phaser.Math.Between(300, 600),
-        x: x + Phaser.Math.Between(-100, 100),
-        alpha: 0,
-        duration: Phaser.Math.Between(5000, 15000),
-        onComplete: () => bubble.destroy()
-      });
-    }
-    
-    // Create more bubbles periodically
-    this.scene.time.addEvent({
-      delay: 2000,
-      callback: this.createSimpleBubbles,
-      callbackScope: this,
-      loop: true
-    });
+    // Method kept for reference but no longer called
+    // Do not add the recursive timer that was causing infinite spawning
   }
   
   /**
