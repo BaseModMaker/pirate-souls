@@ -1,5 +1,5 @@
 /**
- * Input handling system for Abyssal Gears: Depths of Iron and Steam
+ * Input handling system for Pirate Souls
  * Translated from pygame InputState and InputHandler classes
  */
 
@@ -67,19 +67,6 @@ class InputHandler {
     // Setup input handlers
     this.setupKeyboardInputs();
     this.setupMouseInputs();
-    
-    // Key mapping - store equivalent of pygame key constants
-    this.keys = {
-      W: 'W',
-      Z: 'Z',
-      A: 'A',
-      Q: 'Q',
-      S: 'S',
-      D: 'D',
-      SPACE: 'SPACE',
-      ESC: 'ESC',
-      P: 'P'
-    };
   }
   
   /**
@@ -88,15 +75,15 @@ class InputHandler {
   setupKeyboardInputs() {
     // Create key objects for detection
     this.keyMap = this.scene.input.keyboard.addKeys({
-      w: 'W',
-      z: 'Z',
-      a: 'A',
-      q: 'Q',
-      s: 'S',
-      d: 'D',
-      space: 'SPACE',
-      esc: 'ESC',
-      p: 'P'
+      w: Phaser.Input.Keyboard.KeyCodes.W,
+      z: Phaser.Input.Keyboard.KeyCodes.Z,
+      a: Phaser.Input.Keyboard.KeyCodes.A,
+      q: Phaser.Input.Keyboard.KeyCodes.Q,
+      s: Phaser.Input.Keyboard.KeyCodes.S,
+      d: Phaser.Input.Keyboard.KeyCodes.D,
+      space: Phaser.Input.Keyboard.KeyCodes.SPACE,
+      esc: Phaser.Input.Keyboard.KeyCodes.ESC,
+      p: Phaser.Input.Keyboard.KeyCodes.P
     });
     
     // Handle 'any key' pressed events for starting the game
@@ -179,26 +166,6 @@ class InputHandler {
     // Update other keyboard controls
     this.currentState.boostTeleport = this.keyMap.space.isDown;
     this.currentState.escape = this.keyMap.esc.isDown;
-  }
-  
-  /**
-   * Check if a key was just pressed this frame
-   * 
-   * @param {string} key - The key to check
-   * @return {boolean} - True if the key was just pressed
-   */
-  wasJustPressed(key) {
-    return this.currentState[key] && !this.previousState[key];
-  }
-  
-  /**
-   * Check if a key was just released this frame
-   * 
-   * @param {string} key - The key to check
-   * @return {boolean} - True if the key was just released
-   */
-  wasJustReleased(key) {
-    return !this.currentState[key] && this.previousState[key];
   }
 }
 

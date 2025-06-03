@@ -1,94 +1,75 @@
-import { useRef, useState } from 'react';
-
+import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
-import { PhaserGame } from './PhaserGame';
+import './App.css';
 
-function App ()
-{
-    // The sprite can only be moved in the MainMenu Scene
-    const [canMoveSprite, setCanMoveSprite] = useState(true);
+// Import core game components
+import BootScene from './scenes/Boot';
+import GameScene from './scenes/Game';
+import GameOverScene from './scenes/GameOver';
+
+function App() {
+  const gameRef = useRef(null);
+  
+  useEffect(() => {
+    // Create the game configuration
+    const config = {
+      type: Phaser.AUTO,
+      parent: 'phaser-container',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      backgroundColor: '#0a4150',
+      scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      },
+      physics: {
+        default: 'arcade',
+        arcade: {
+          gravity: { y: 0 },
+          debug: false
+        }
+      },
+      scene: [BootScene, GameScene, GameOverScene],
+      pixelArt: true,
+      roundPixels: true
+    };
     
-    //  References to the PhaserGame component (game and scene are exposed)
-    const phaserRef = useRef();
-    const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
-
-    const changeScene = () => {
-
-        const scene = phaserRef.current.scene;
-
-        if (scene)
-        {
-            scene.changeScene();
-        }
+    // Destroy any existing game instance
+    if (gameRef.current) {
+      gameRef.current.destroy(true);
     }
-
-    const moveSprite = () => {
-
-        const scene = phaserRef.current.scene;
-
-        if (scene && scene.scene.key === 'MainMenu')
-        {
-            // Get the update logo position
-            scene.moveLogo(({ x, y }) => {
-
-                setSpritePosition({ x, y });
-
-            });
-        }
-    }
-
-    const addSprite = () => {
-
-        const scene = phaserRef.current.scene;
-
-        if (scene)
-        {
-            // Add more stars
-            const x = Phaser.Math.Between(64, scene.scale.width - 64);
-            const y = Phaser.Math.Between(64, scene.scale.height - 64);
-
-            //  `add.sprite` is a Phaser GameObjectFactory method and it returns a Sprite Game Object instance
-            const star = scene.add.sprite(x, y, 'star');
-
-            //  ... which you can then act upon. Here we create a Phaser Tween to fade the star sprite in and out.
-            //  You could, of course, do this from within the Phaser Scene code, but this is just an example
-            //  showing that Phaser objects and systems can be acted upon from outside of Phaser itself.
-            scene.add.tween({
-                targets: star,
-                duration: 500 + Math.random() * 1000,
-                alpha: 0,
-                yoyo: true,
-                repeat: -1
-            });
-        }
-    }
-
-    // Event emitted from the PhaserGame component
-    const currentScene = (scene) => {
-
-        setCanMoveSprite(scene.scene.key !== 'MainMenu');
-        
-    }
-
-    return (
-        <div id="app">
-            <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
-            <div>
-                <div>
-                    <button className="button" onClick={changeScene}>Change Scene</button>
-                </div>
-                <div>
-                    <button disabled={canMoveSprite} className="button" onClick={moveSprite}>Toggle Movement</button>
-                </div>
-                <div className="spritePosition">Sprite Position:
-                    <pre>{`{\n  x: ${spritePosition.x}\n  y: ${spritePosition.y}\n}`}</pre>
-                </div>
-                <div>
-                    <button className="button" onClick={addSprite}>Add New Sprite</button>
-                </div>
-            </div>
-        </div>
-    )
+    
+    // Create new game instance with our translated pygame components
+    gameRef.current = new Phaser.Game(config);
+    
+    console.log("Abyssal Gears: Depths of Iron and Steam initialized");
+    
+    // Handle window resize
+    const resizeGame = () => {
+      if (gameRef.current) {
+        gameRef.current.scale.resize(window.innerWidth, window.innerHeight);
+      }
+    };
+    
+    window.addEventListener('resize', resizeGame);
+    
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('resize', resizeGame);
+      if (gameRef.current) {
+        gameRef.current.destroy(true);
+      }
+    };
+  }, []);
+  
+  return (
+    <div className="App">
+      <div id="phaser-container"></div>
+      <div className="game-ui">
+        {/* Game UI elements can be added here if needed */}
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
