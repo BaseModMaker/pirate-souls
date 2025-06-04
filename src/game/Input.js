@@ -60,6 +60,7 @@ class InputHandler {
     this.scene = scene;
     this.currentState = new InputState();
     this.previousState = new InputState();
+    this._keyPressedSinceLastCheck = false; // Flag to track key press between checks
     
     // Detect if we're on mobile
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -89,6 +90,7 @@ class InputHandler {
     // Handle 'any key' pressed events for starting the game
     this.scene.input.keyboard.on('keydown', () => {
       this.currentState.anyKeyPressed = true;
+      this._keyPressedSinceLastCheck = true;
     });
     
     // Set up specific key event handlers
@@ -119,6 +121,7 @@ class InputHandler {
       
       // Any pointer down counts as an "any key press" for the start screen
       this.currentState.anyKeyPressed = true;
+      this._keyPressedSinceLastCheck = true;
     });
     
     this.scene.input.on('pointerup', (pointer) => {
@@ -135,6 +138,18 @@ class InputHandler {
   }
   
   /**
+   * Check if any key has been pressed since the last check
+   * and reset the state after checking
+   * 
+   * @returns {boolean} True if any key has been pressed
+   */
+  checkAndResetAnyKeyPressed() {
+    const wasPressed = this._keyPressedSinceLastCheck;
+    this._keyPressedSinceLastCheck = false;
+    return wasPressed;
+  }
+  
+  /**
    * Update input states based on current Phaser input state
    * Call this method in the scene's update loop
    */
@@ -142,8 +157,7 @@ class InputHandler {
     // Store previous state
     this.previousState.copy(this.currentState);
     
-    // Reset special states
-    this.currentState.anyKeyPressed = false;
+    // Reset special states but keep anyKeyPressed until checkAndResetAnyKeyPressed is called
     this.currentState.performanceToggle = false;
     this.currentState.quitRequested = false;
     
